@@ -1,5 +1,7 @@
 package com.example.JoraLoger;
 
+import com.example.JoraLoger.filter.DefaultLogFilter;
+import com.example.JoraLoger.filter.LogFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +15,7 @@ public class KafkaLogConsumer {
     LogRepository logRepository;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private LogFilter currentFilter = new DefaultLogFilter();
 
     @KafkaListener(topics = "logs", groupId = "log-group")
     public void listen(String message) {
@@ -23,6 +26,8 @@ public class KafkaLogConsumer {
             if (mustBeFiltered(logEntity)) {
                 log.warn("message filtered");
                 return;
+            } else {
+                log.info("message passed");
             }
             logEntity.setId(logId);
             logRepository.save(logEntity);
@@ -35,10 +40,9 @@ public class KafkaLogConsumer {
     }
 
     private boolean mustBeFiltered(LogEntity logEntity) {
-        if (logEntity.getLevel().equals("DEBUG") || logEntity.getLevel().equals("INFO")
-        || logEntity.getLevel().equals("TRACE")) {
-            return true;
-        }
-        return false;
+        return currentFilter.shouldFilter(logEntity);
+    }
+    public void setFilter(LogFilter filter) {
+        this.currentFilter = filter;
     }
 }
