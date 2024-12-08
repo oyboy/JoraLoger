@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: JoraLoger
+
+  kafka:
+    bootstrap-servers:
+      - localhost:9092
+
+server:
+  port: 8082

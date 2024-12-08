@@ -1,0 +1,54 @@
+services:
+  jora-loger:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 8082:8082
+    env_file:
+      - .env
+    environment:
+       SPRING_KAFKA_BOOTSTRAP_SERVERS: localhost:9092 #on windows: host.docker.internal:9092
+       SPRING_DATA_ELASTICSEARCH_REPOSITORIES_ENABLED: true
+       SPRING_DATA_ELASTICSEARCH_CLUSTER-NODES: jora-elastic-db:9200
+       SPRING_DATA_ELASTICSEARCH.REQUIRED-DELEGATE-LENGTH: true
+       ELASTICSEARCH_USERNAME: ${ELASTIC_USERNAME}
+       ELASTICSEARCH_PASSWORD: ${ELASTIC_PASSWORD}
+
+    depends_on:
+      - elastic
+      - kibana
+#      - kafka
+
+  elastic:
+    image: elastic/elasticsearch:7.17.26
+    container_name: jora-elastic-db
+    restart: always
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms3g -Xmx3g
+      - xpack.security.enabled=true
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - xpack.security.enabled=false
+    ports:
+      - 9200:9200
+      - 9300:9300
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+
+  kibana:
+    image: kibana:7.17.26
+    container_name: jora-kibana
+    restart: always
+    environment:
+      - ELASTICSEARCH_HOSTS=http://jora-elastic-db:9200
+      - ELASTICSEARCH_USERNAME=${ELASTIC_USERNAME}
+      - ELASTICSEARCH_PASSWORD=${ELASTIC_PASSWORD}
+    ports:
+      - 5601:5601
+
+  #kafka:
+   #image: kafka:3.9.0
+
+volumes:
+  esdata:
